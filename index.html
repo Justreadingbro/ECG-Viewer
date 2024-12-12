@@ -2,8 +2,11 @@
 <html>
 <head>
   <title>ECG Data</title>
+  <!-- Include Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.0/dist/chart.min.js"></script>
+  <!-- Include Chart.js Streaming plugin -->
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-streaming@2.0.0/dist/chartjs-plugin-streaming.min.js"></script>
+  <!-- Include the date adapter -->
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@1.1.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 </head>
 <body>
@@ -14,8 +17,7 @@
   
   <script>
     var ctx = document.getElementById('ecgChart').getContext('2d');
-    
-    // Define chart data structure
+
     var ecgData = {
       datasets: [{
         label: 'ECG Data',
@@ -26,7 +28,6 @@
       }]
     };
 
-    // Chart configuration for real-time data
     var config = {
       type: 'line',
       data: ecgData,
@@ -38,12 +39,10 @@
               delay: 2000, // Fetch new data every 2 seconds
               refresh: 100, // Refresh the chart every 100ms
               onRefresh: function(chart) {
-                // Fetch ECG data from your ESP32 (use HTTPS for production)
                 fetch('http://192.168.154.188/ecg') // Change to HTTPS if in production
                   .then(response => response.json())
                   .then(data => {
                     if (data.ecg !== undefined) {
-                      // Add new ECG data point
                       chart.data.datasets[0].data.push({
                         x: Date.now(),
                         y: data.ecg
@@ -63,10 +62,8 @@
       }
     };
 
-    // Initialize the ECG chart
     var ecgChart = new Chart(ctx, config);
 
-    // Function to get geolocation
     function getLocation() {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(showPosition, showError);
@@ -75,7 +72,6 @@
       }
     }
 
-    // Function to display the geolocation
     function showPosition(position) {
       var lat = position.coords.latitude;
       var lon = position.coords.longitude;
@@ -83,7 +79,6 @@
         "Latitude: " + lat + "<br>Longitude: " + lon;
     }
 
-    // Function to handle geolocation errors
     function showError(error) {
       switch(error.code) {
         case error.PERMISSION_DENIED:
