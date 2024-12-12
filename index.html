@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ECG Data</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-streaming@1.9.0/dist/chartjs-plugin-streaming.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@1.1.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+</head>
+<body>
+  <h1>ECG Data</h1>
+  <canvas id="ecgChart" width="400" height="150"></canvas>
+  <button onclick="getLocation()">Get Location</button>
+  <p id="location"></p>
+  <script>
+    var ctx = document.getElementById('ecgChart').getContext('2d');
+    var ecgData = {
+      labels: [],
+      datasets: [{
+        label: 'ECG',
+        data: [],
+        borderColor: 'rgba(75, 192, 192, 1)',
+        borderWidth: 1
+      }]
+    };
+
+    var config = {
+      type: 'line',
+      data: ecgData,
+      options: {
+        scales: {
+          xAxes: [{
+            type: 'realtime',
+            realtime: {
+              delay: 2000,
+              refresh: 100,
+              onRefresh: function(chart) {
+                fetch('http://192.168.154.188/ecg')
+                  .then(response => response.json())
+                  .then(data => {
+                    chart.data.datasets[0].data.push({
+                      x: Date.now(),
+                      y: data.ecg
+                    });
+                  });
+              }
+            }
+          }],
+          yAxes: [{
+            ticks: {
+              beginAtZero: true
+            }
+          }]
+        }
+      }
+    };
+
+    var ecgChart = new Chart(ctx, config);
+
+    function getLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(showPosition);
+      } else {
+        document.getElementById("location").innerHTML = "Geolocation is not supported by this browser.";
+      }
+    }
+
+    function showPosition(position) {
+      var lat = position.coords.latitude;
+      var lon = position.coords.longitude;
+      document.getElementById("location").innerHTML = "Latitude: " + lat + "<br>Longitude: " + lon;
+    }
+  </script>
+</body>
+</html>
