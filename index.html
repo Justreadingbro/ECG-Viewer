@@ -2,8 +2,8 @@
 <html>
 <head>
   <title>ECG Data</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-streaming@1.9.0/dist/chartjs-plugin-streaming.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.0/dist/chart.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-streaming@2.0.0/dist/chartjs-plugin-streaming.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@1.1.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 </head>
 <body>
@@ -11,63 +11,94 @@
   <canvas id="ecgChart" width="400" height="150"></canvas>
   <button onclick="getLocation()">Get Location</button>
   <p id="location"></p>
+  
   <script>
     var ctx = document.getElementById('ecgChart').getContext('2d');
+    
+    // Define chart data structure
     var ecgData = {
-      labels: [],
       datasets: [{
-        label: 'ECG',
+        label: 'ECG Data',
         data: [],
         borderColor: 'rgba(75, 192, 192, 1)',
-        borderWidth: 1
+        borderWidth: 1,
+        fill: false
       }]
     };
 
+    // Chart configuration for real-time data
     var config = {
       type: 'line',
       data: ecgData,
       options: {
         scales: {
-          xAxes: [{
+          x: {
             type: 'realtime',
             realtime: {
-              delay: 2000,
-              refresh: 100,
+              delay: 2000, // Fetch new data every 2 seconds
+              refresh: 100, // Refresh the chart every 100ms
               onRefresh: function(chart) {
-                fetch('http://192.168.154.188/ecg')
+                // Fetch ECG data from your ESP32 (use HTTPS for production)
+                fetch('http://192.168.154.188/ecg') // Change to HTTPS if in production
                   .then(response => response.json())
                   .then(data => {
-                    chart.data.datasets[0].data.push({
-                      x: Date.now(),
-                      y: data.ecg
-                    });
-                  });
+                    if (data.ecg !== undefined) {
+                      // Add new ECG data point
+                      chart.data.datasets[0].data.push({
+                        x: Date.now(),
+                        y: data.ecg
+                      });
+                    }
+                  })
+                  .catch(err => console.error('Error fetching ECG data:', err));
               }
             }
-          }],
-          yAxes: [{
-            ticks: {
-              beginAtZero: true
-            }
-          }]
+          },
+          y: {
+            beginAtZero: true,
+            suggestedMin: 0,
+            suggestedMax: 4095 // ECG data value range (adjust as needed)
+          }
         }
       }
     };
 
+    // Initialize the ECG chart
     var ecgChart = new Chart(ctx, config);
 
+    // Function to get geolocation
     function getLocation() {
       if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(showPosition);
+        navigator.geolocation.getCurrentPosition(showPosition, showError);
       } else {
         document.getElementById("location").innerHTML = "Geolocation is not supported by this browser.";
       }
     }
 
+    // Function to display the geolocation
     function showPosition(position) {
       var lat = position.coords.latitude;
       var lon = position.coords.longitude;
-      document.getElementById("location").innerHTML = "Latitude: " + lat + "<br>Longitude: " + lon;
+      document.getElementById("location").innerHTML = 
+        "Latitude: " + lat + "<br>Longitude: " + lon;
+    }
+
+    // Function to handle geolocation errors
+    function showError(error) {
+      switch(error.code) {
+        case error.PERMISSION_DENIED:
+          document.getElementById("location").innerHTML = "User denied the request for Geolocation.";
+          break;
+        case error.POSITION_UNAVAILABLE:
+          document.getElementById("location").innerHTML = "Location information is unavailable.";
+          break;
+        case error.TIMEOUT:
+          document.getElementById("location").innerHTML = "The request to get user location timed out.";
+          break;
+        case error.UNKNOWN_ERROR:
+          document.getElementById("location").innerHTML = "An unknown error occurred.";
+          break;
+      }
     }
   </script>
 </body>
